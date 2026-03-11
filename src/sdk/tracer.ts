@@ -45,7 +45,15 @@ export class Trace {
    */
   startSpan(name: string, options: SpanOptions = {}): Span {
     const parentId = options.parentSpanId ?? context.getSpanId();
-    const span = new Span(this.id, name, parentId, options.attributes);
+    const store = this._store;
+
+    const span = new Span(
+      this.id,
+      name,
+      parentId,
+      options.attributes,
+      (s) => store.saveSpan(s.toRecord()) // auto-persist on end
+    );
 
     this._spans.set(span.id, span);
 
@@ -214,7 +222,7 @@ export class Tracer {
           span = new Span(traceId, spanName, parentSpanId, {
             model,
             messageCount: Array.isArray(messages) ? messages.length : 0,
-          });
+          }, (s) => tracer._store.saveSpan(s.toRecord()));
           tracer._store.saveSpan(span.toRecord());
         }
       }
@@ -265,7 +273,8 @@ export class Tracer {
 
       let span: Span | undefined;
       if (traceId) {
-        span = new Span(traceId, spanName, parentSpanId, { model });
+        span = new Span(traceId, spanName, parentSpanId, { model },
+          (s) => tracer._store.saveSpan(s.toRecord()));
         tracer._store.saveSpan(span.toRecord());
       }
 

@@ -13,18 +13,21 @@ export class Span {
   private _attributes: Record<string, unknown> = {};
   private _errorMessage?: string;
   private _children: Span[] = [];
+  private _onEnd?: (span: Span) => void;
 
   constructor(
     traceId: string,
     name: string,
     parentSpanId?: string,
-    attributes?: Record<string, unknown>
+    attributes?: Record<string, unknown>,
+    onEnd?: (span: Span) => void
   ) {
     this.id = randomUUID();
     this.traceId = traceId;
     this.parentSpanId = parentSpanId;
     this.name = name;
     this.startTime = Date.now();
+    this._onEnd = onEnd;
     if (attributes) {
       this._attributes = { ...attributes };
     }
@@ -47,6 +50,7 @@ export class Span {
     this._endTime = Date.now();
     this._status = status;
     if (errorMessage) this._errorMessage = errorMessage;
+    this._onEnd?.(this);
   }
 
   /** End the span with an error */
