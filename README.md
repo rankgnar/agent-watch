@@ -241,6 +241,41 @@ The handler automatically creates spans for:
 
 ---
 
+## Use Cases
+
+### 🔍 Debug a failing agent
+Your customer support agent suddenly starts giving wrong answers. Instead of digging through raw logs, replay the exact trace to see which tool call returned bad data or which LLM response went off the rails.
+
+```bash
+agent-watch list --status error --since 24
+agent-watch replay <trace-id>
+```
+
+### 📊 Monitor agent performance in production
+Track latency, token usage, and error rates across all your agents. Spot regressions before users complain.
+
+```bash
+agent-watch stats
+# Error rate: 2.3%  |  Avg duration: 1.8s  |  Top failure: timeout in search-tool
+```
+
+### 🧪 Compare prompt changes
+Changed a system prompt? Run both versions and compare traces side by side — see how token usage, latency, and output quality differ.
+
+### 💰 Track LLM costs per agent
+Every trace captures input/output token counts per call. Aggregate by agent to see which one is burning through your API budget.
+
+### 🛡️ Audit agent decisions for compliance
+In regulated industries (finance, healthcare), you need a record of *why* an AI made a decision. `agent-watch` gives you the full decision tree with timestamps.
+
+### 🔄 Catch infinite loops and retries
+Agent stuck in a retry loop calling the same tool 50 times? The span tree makes it immediately obvious — no more guessing from flat logs.
+
+### 🏗️ Onboard new team members
+New developer joins the team? Point them at the dashboard to understand how the agent actually works — what it calls, in what order, and what it expects back.
+
+---
+
 ## Self-hosted. Zero cloud. MIT.
 
 All data is stored locally in a SQLite file at `~/.agent-watch/traces.db` (or a custom path via `--db`).  
