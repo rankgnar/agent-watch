@@ -1,17 +1,18 @@
 {
   "name": "agent-watch",
   "version": "0.1.0",
-  "description": "Observability SDK for AI agents in production — traces, spans, and a local dashboard. Zero cloud, self-hosted.",
+  "description": "Observability SDK for AI agents in production \u2014 traces, spans, and a local dashboard. Zero cloud, self-hosted.",
   "main": "./dist/sdk/index.js",
   "types": "./dist/sdk/index.d.ts",
   "bin": {
     "agent-watch": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/dashboard/public dist/dashboard/public",
     "dev": "tsc --watch",
     "lint": "eslint src --ext .ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postbuild": "cp -r src/dashboard/public dist/dashboard/public 2>/dev/null || true"
   },
   "keywords": [
     "ai",
