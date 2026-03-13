@@ -1,7 +1,7 @@
 {
   "name": "agent-watch",
   "version": "0.1.0",
-  "description": "Observability SDK for AI agents in production \u2014 traces, spans, and a local dashboard. Zero cloud, self-hosted.",
+  "description": "Observability SDK for AI agents in production — traces, spans, and a local dashboard. Zero cloud, self-hosted.",
   "main": "./dist/sdk/index.js",
   "types": "./dist/sdk/index.d.ts",
   "bin": {
