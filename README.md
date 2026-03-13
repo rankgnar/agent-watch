@@ -39,24 +39,48 @@ npm install -g agent-watch
 
 ## Quick Start
 
+Add one line to your app:
+
+```js
+require('agent-watch/auto');
+```
+
+That's it. Every OpenAI and Anthropic call is now traced automatically.
+Works with any OpenAI-compatible provider (OpenRouter, Groq, Together, Ollama).
+
+Run the dashboard:
+
+```bash
+npx agent-watch serve
+```
+
+### Optional configuration (env vars)
+
+| Variable | Default | Description |
+|---|---|---|
+| `AGENT_WATCH_NAME` | script filename | Agent name shown in the dashboard |
+| `AGENT_WATCH_DB` | `~/.agent-watch/traces.db` | Custom SQLite DB path |
+| `AGENT_WATCH_DISABLED=true` | — | Disable tracing without removing the line |
+| `AGENT_WATCH_DASHBOARD=true` | — | Auto-start the dashboard on port 4200 |
+
+### Manual instrumentation (advanced)
+
+If you need fine-grained control, you can still use the SDK directly:
+
 ```typescript
 import { createTracer } from 'agent-watch';
 import OpenAI from 'openai';
 
-// 1. Create a tracer
 const tracer = createTracer({ name: 'my-agent', store: 'sqlite' });
-
-// 2. Instrument your OpenAI client — all calls are automatically traced
 const openai = tracer.instrument(new OpenAI());
 
-// 3. Run your agent normally
 const response = await openai.chat.completions.create({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'Hello' }],
 });
 ```
 
-That's it. Traces are saved to `~/.agent-watch/traces.db`.
+Traces are saved to `~/.agent-watch/traces.db`.
 
 ---
 

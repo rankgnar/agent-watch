@@ -4,6 +4,18 @@
   "description": "Observability SDK for AI agents in production \u2014 traces, spans, and a local dashboard. Zero cloud, self-hosted.",
   "main": "./dist/sdk/index.js",
   "types": "./dist/sdk/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/sdk/index.js",
+      "import": "./dist/sdk/index.js",
+      "types": "./dist/sdk/index.d.ts"
+    },
+    "./auto": {
+      "require": "./dist/auto.js",
+      "import": "./dist/auto.js",
+      "types": "./dist/auto.d.ts"
+    }
+  },
   "bin": {
     "agent-watch": "./dist/cli/index.js"
   },
