@@ -39,6 +39,43 @@ npm install -g agent-watch
 
 ## Quick Start
 
+### Zero-code proxy (recommended)
+
+Start the proxy — works with any language, any AI provider:
+
+```bash
+npx agent-watch --target https://openrouter.ai/api/v1
+```
+
+Point your app to `http://localhost:4201` instead of your API URL. Done.
+
+Works with: OpenAI, Anthropic, OpenRouter, Groq, Mistral, Together, Ollama, any OpenAI-compatible API.
+
+### Examples
+
+```bash
+# OpenRouter
+npx agent-watch --target https://openrouter.ai/api/v1
+
+# Anthropic
+npx agent-watch --target https://api.anthropic.com
+
+# Ollama (local)
+npx agent-watch --target http://localhost:11434
+
+# OpenAI
+npx agent-watch --target https://api.openai.com
+```
+
+The proxy captures every request and response automatically — model, tokens, latency, errors.  
+The dashboard opens at `http://localhost:4200`.
+
+> **Security:** The proxy only listens on `127.0.0.1` (localhost). API keys are forwarded to the target but **never** stored in the database.
+
+---
+
+### SDK mode (Node.js only)
+
 Add one line to your app:
 
 ```js
@@ -175,6 +212,10 @@ const result = await withTrace('my-agent', 'task-name', async (trace) => {
 ## CLI
 
 ```bash
+# Start proxy mode (recommended — works with any language/provider)
+agent-watch --target https://openrouter.ai/api/v1
+agent-watch proxy --target https://api.openai.com --port 4201 --dashboard-port 4200
+
 # Show recent traces (last 24h)
 agent-watch list
 
