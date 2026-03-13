@@ -5,346 +5,213 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Node.js](https://img.shields.io/node/v/agent-watch)](package.json)
 
-**Observability SDK for AI agents in production.**  
-Trace every LLM call, tool use, and decision — locally, with zero cloud dependencies.
+**Observability for AI apps in production.**
+See every LLM call your app makes — model, tokens, latency, errors — in a local dashboard. Zero cloud. Zero config.
 
 ![agent-watch dashboard](assets/banner.jpg)
 
 ---
 
-## Why agent-watch?
+## Who is this for?
 
-You deployed an AI agent. It works — until it doesn't. Then you stare at logs wondering:
+If you're **building software that calls AI APIs** (OpenAI, Anthropic, OpenRouter, Groq, Ollama, etc.), `agent-watch` shows you exactly what's happening under the hood:
 
-- *Which LLM call took 8 seconds?*
-- *Which tool returned garbage that broke the chain?*
-- *Was it a timeout, a bad prompt, or a malformed response?*
+- **Backend developers** building chatbots, AI assistants, or automated workflows
+- **Startup teams** running AI agents in production that need to debug failures fast
+- **Freelancers** building AI-powered apps for clients who ask "why did it break?"
+- **Teams with AI pipelines** processing documents, analyzing data, or generating content
 
-`agent-watch` gives you a **trace tree** for every agent run, so you can answer those questions in seconds instead of hours. No cloud account required. No data leaves your machine.
+### The problem it solves
 
----
+Your AI app calls GPT-4 or Claude 50 times per request. One of those calls fails, returns garbage, or takes 10 seconds. Without `agent-watch`, you dig through logs for hours. With it, you open a dashboard and see the exact call that failed, why, and how long it took.
 
-## Install
+### NOT for
 
-```bash
-npm install agent-watch
-```
-
-```bash
-# CLI (optional, global)
-npm install -g agent-watch
-```
+- End users chatting with ChatGPT (you don't need this)
+- Non-technical users (this is a developer tool)
 
 ---
 
 ## Quick Start
 
-### Zero-code proxy (recommended)
+### Option 1: Proxy mode (any language — recommended)
 
-Start the proxy — works with any language, any AI provider:
+Run one command. No code changes needed:
 
 ```bash
 npx agent-watch --target https://openrouter.ai/api/v1
 ```
 
-Point your app to `http://localhost:4201` instead of your API URL. Done.
+Then point your app to `http://localhost:4201` instead of the API URL:
 
-Works with: OpenAI, Anthropic, OpenRouter, Groq, Mistral, Together, Ollama, any OpenAI-compatible API.
+```python
+# Python
+client = OpenAI(base_url="http://localhost:4201/v1")
 
-### Examples
+# JavaScript
+const client = new OpenAI({ baseURL: "http://localhost:4201/v1" });
 
-```bash
-# OpenRouter
-npx agent-watch --target https://openrouter.ai/api/v1
-
-# Anthropic
-npx agent-watch --target https://api.anthropic.com
-
-# Ollama (local)
-npx agent-watch --target http://localhost:11434
-
-# OpenAI
-npx agent-watch --target https://api.openai.com
+# curl
+curl http://localhost:4201/v1/chat/completions -H "Authorization: Bearer YOUR_KEY" ...
 ```
 
-The proxy captures every request and response automatically — model, tokens, latency, errors.  
-The dashboard opens at `http://localhost:4200`.
+Open `http://localhost:4200` → see every call in real time.
 
-> **Security:** The proxy only listens on `127.0.0.1` (localhost). API keys are forwarded to the target but **never** stored in the database.
+Works with **any language** (Python, Go, Rust, Java, curl) and **any provider**:
 
----
+```bash
+npx agent-watch --target https://api.openai.com        # OpenAI
+npx agent-watch --target https://api.anthropic.com      # Anthropic
+npx agent-watch --target https://openrouter.ai/api/v1   # OpenRouter
+npx agent-watch --target http://localhost:11434          # Ollama (local)
+npx agent-watch --target https://api.groq.com/openai    # Groq
+npx agent-watch --target https://api.together.xyz       # Together
+npx agent-watch --target https://api.mistral.ai         # Mistral
+```
 
-### SDK mode (Node.js only)
+> **Security:** The proxy only listens on `127.0.0.1` (your machine). API keys are forwarded to the provider but **never** stored locally.
 
-Add one line to your app:
+### Option 2: One-liner for Node.js
+
+If your app is Node.js, just add one line at the top:
 
 ```js
 require('agent-watch/auto');
 ```
 
-That's it. Every OpenAI and Anthropic call is now traced automatically.
-Works with any OpenAI-compatible provider (OpenRouter, Groq, Together, Ollama).
-
-Run the dashboard:
+Every OpenAI/Anthropic call is traced automatically. Run the dashboard with:
 
 ```bash
 npx agent-watch serve
 ```
 
-### Optional configuration (env vars)
+---
 
-| Variable | Default | Description |
-|---|---|---|
-| `AGENT_WATCH_NAME` | script filename | Agent name shown in the dashboard |
-| `AGENT_WATCH_DB` | `~/.agent-watch/traces.db` | Custom SQLite DB path |
-| `AGENT_WATCH_DISABLED=true` | — | Disable tracing without removing the line |
-| `AGENT_WATCH_DASHBOARD=true` | — | Auto-start the dashboard on port 4200 |
+## What you see in the dashboard
 
-### Manual instrumentation (advanced)
-
-If you need fine-grained control, you can still use the SDK directly:
-
-```typescript
-import { createTracer } from 'agent-watch';
-import OpenAI from 'openai';
-
-const tracer = createTracer({ name: 'my-agent', store: 'sqlite' });
-const openai = tracer.instrument(new OpenAI());
-
-const response = await openai.chat.completions.create({
-  model: 'gpt-4',
-  messages: [{ role: 'user', content: 'Hello' }],
-});
+```
+✓ classify-ticket      0.8s   gpt-4    tokens: 150    ok
+✓ lookup-customer      0.2s   —        DB query       ok
+✗ generate-response    ERROR  gpt-4    rate_limit     error
+✓ retry-response       1.2s   gpt-4    tokens: 340    ok
+✓ send-email           0.1s   —        SMTP           ok
 ```
 
-Traces are saved to `~/.agent-watch/traces.db`.
+Click any trace to see the full span tree — every step your agent took, with timing, token counts, and the exact error message when something breaks.
 
 ---
 
-## SDK API
+## Real-world use cases
 
-### `createTracer(config)`
+### 🔍 "My AI agent is giving wrong answers"
+Open the dashboard, find the trace, see which LLM call returned unexpected output. Fix the prompt, not the whole app.
 
-```typescript
-const tracer = createTracer({
-  name: 'my-agent',       // Agent name — appears in all traces
-  store: 'sqlite',        // Storage backend (currently only 'sqlite')
-  dbPath: './traces.db',  // Optional: custom DB path
-});
-```
+### 💰 "How much are we spending on tokens?"
+Every trace shows input/output token counts. See which agent or workflow burns the most API budget.
 
-### `tracer.startTrace(name, options?)`
+### ⚡ "The app is slow, but I don't know why"
+Latency per span. Instantly see if it's the LLM (2s), the database (50ms), or the tool call (5s timeout).
 
-Start a trace manually. Call `.end()` when done.
+### 🔄 "The agent is stuck in a loop"
+The span tree makes it obvious — 47 identical calls to the same tool. No more guessing from flat logs.
 
-```typescript
-const trace = tracer.startTrace('process-order', {
-  metadata: { orderId: '123', userId: 'abc' },
-});
+### 🛡️ "We need an audit trail"
+Regulated industries (finance, healthcare) need records of AI decisions. `agent-watch` stores the full decision tree with timestamps.
 
-const span = trace.startSpan('validate-input');
-span.setAttributes({ orderId: '123' });
-span.end('ok');
-
-trace.end(); // auto-computes status from spans
-```
-
-### `tracer.withTrace(name, fn)`
-
-Convenience wrapper — the trace is automatically ended when `fn` resolves or throws.
-
-```typescript
-const result = await tracer.withTrace('process-order', async (trace) => {
-  const span = trace.startSpan('validate');
-  span.setAttributes({ orderId: '123' });
-  span.end('ok');
-  return { status: 'done' };
-});
-```
-
-### `tracer.instrument(client)`
-
-Monkey-patch an OpenAI or Anthropic client to auto-trace all API calls.
-
-```typescript
-const openai = tracer.instrument(new OpenAI());
-const anthropic = tracer.instrument(new Anthropic());
-```
-
-### `trace.startSpan(name, options?)`
-
-```typescript
-const span = trace.startSpan('llm-call', {
-  attributes: { model: 'gpt-4', promptTokens: 150 },
-});
-
-// ... do work ...
-
-span.setAttributes({ completionTokens: 80 });
-span.end('ok');             // or span.endWithError(new Error('...'))
-```
-
-### `span.setAttributes(attrs)`
-
-Add metadata to a span at any point before it ends.
-
-```typescript
-span.setAttributes({
-  model: 'gpt-4',
-  temperature: 0.7,
-  retryCount: 2,
-});
-```
-
-### `withTrace(agentName, traceName, fn)` (standalone)
-
-```typescript
-import { withTrace } from 'agent-watch';
-
-const result = await withTrace('my-agent', 'task-name', async (trace) => {
-  // ...
-  return 'done';
-});
-```
+### 🧪 "Did my prompt change break anything?"
+Compare traces before and after. See how token usage, latency, and outputs differ.
 
 ---
 
 ## CLI
 
 ```bash
-# Start proxy mode (recommended — works with any language/provider)
-agent-watch --target https://openrouter.ai/api/v1
-agent-watch proxy --target https://api.openai.com --port 4201 --dashboard-port 4200
-
-# Show recent traces (last 24h)
-agent-watch list
-
-# Filter by agent, status, or time window
-agent-watch list --agent my-agent --status error --since 48
-
-# Show full span tree with timing
-agent-watch replay abc12345
-
-# Summary metrics (error rate, avg duration, top failures)
-agent-watch stats
-
-# Start the web dashboard on port 4200
-agent-watch serve --port 4200
+agent-watch --target <url>           # Start proxy + dashboard
+agent-watch serve --port 4200        # Dashboard only
+agent-watch list                     # Recent traces
+agent-watch list --status error      # Only failures
+agent-watch replay <trace-id>        # Full span tree
+agent-watch stats                    # Error rate, avg latency, top failures
 ```
 
 ---
 
-## Dashboard
+## Configuration (optional)
 
-```bash
-agent-watch serve --port 4200
-# → http://localhost:4200
-```
-
-The dashboard shows:
-
-- **Recent traces** with status and timing, filterable by agent/status/date
-- **Span tree** — click any trace to see the full decision tree
-- **Stats bar** — error rate, avg duration, recent activity
-- **Top failures** — which trace names fail most often
-
-> 📸 _Dashboard screenshot coming soon_
+| Variable | Default | Description |
+|---|---|---|
+| `AGENT_WATCH_NAME` | script filename | Agent name in the dashboard |
+| `AGENT_WATCH_DB` | `~/.agent-watch/traces.db` | Custom database path |
+| `AGENT_WATCH_DISABLED=true` | — | Disable without removing code |
 
 ---
 
-## Integrations
+## Advanced: Manual SDK
 
-### OpenAI
-
-```typescript
-import OpenAI from 'openai';
-import { createTracer } from 'agent-watch';
-
-const tracer = createTracer({ name: 'my-agent', store: 'sqlite' });
-const openai = tracer.instrument(new OpenAI());
-
-// Automatically traces: model, token usage, latency, errors
-const response = await openai.chat.completions.create({ ... });
-```
-
-### Anthropic
+For fine-grained control over traces and spans:
 
 ```typescript
-import Anthropic from '@anthropic-ai/sdk';
 import { createTracer } from 'agent-watch';
 
-const tracer = createTracer({ name: 'my-agent', store: 'sqlite' });
-const anthropic = tracer.instrument(new Anthropic());
+const tracer = createTracer({ name: 'my-agent' });
+const trace = tracer.startTrace('process-order');
 
-// Automatically traces: model, input/output tokens, latency, errors
-const message = await anthropic.messages.create({ ... });
-```
+const span = trace.startSpan('validate-input');
+span.setAttributes({ orderId: '123' });
+span.end('ok');
 
-### LangChain
-
-```typescript
-import { ChatOpenAI } from '@langchain/openai';
-import { createTracer } from 'agent-watch';
-import { AgentWatchCallbackHandler } from 'agent-watch/integrations/langchain';
-
-const tracer = createTracer({ name: 'my-agent', store: 'sqlite' });
-const trace = tracer.startTrace('langchain-run');
-
-const llm = new ChatOpenAI({
-  callbacks: [new AgentWatchCallbackHandler(trace)],
-});
-
-const result = await llm.invoke('Hello');
 trace.end();
 ```
 
-The handler automatically creates spans for:
+Full SDK docs: [SDK API Reference](#sdk-api)
 
-- LLM calls (with token usage)
-- Chain runs
-- Tool invocations
+<details>
+<summary><strong>SDK API Reference</strong></summary>
 
----
+### `createTracer(config)`
 
-## Use Cases
-
-### 🔍 Debug a failing agent
-Your customer support agent suddenly starts giving wrong answers. Instead of digging through raw logs, replay the exact trace to see which tool call returned bad data or which LLM response went off the rails.
-
-```bash
-agent-watch list --status error --since 24
-agent-watch replay <trace-id>
+```typescript
+const tracer = createTracer({
+  name: 'my-agent',
+  store: 'sqlite',
+  dbPath: './traces.db',
+});
 ```
 
-### 📊 Monitor agent performance in production
-Track latency, token usage, and error rates across all your agents. Spot regressions before users complain.
+### `tracer.startTrace(name)` / `tracer.withTrace(name, fn)`
 
-```bash
-agent-watch stats
-# Error rate: 2.3%  |  Avg duration: 1.8s  |  Top failure: timeout in search-tool
+```typescript
+// Manual
+const trace = tracer.startTrace('task');
+trace.end();
+
+// Automatic
+await tracer.withTrace('task', async (trace) => { ... });
 ```
 
-### 🧪 Compare prompt changes
-Changed a system prompt? Run both versions and compare traces side by side — see how token usage, latency, and output quality differ.
+### `trace.startSpan(name)`
 
-### 💰 Track LLM costs per agent
-Every trace captures input/output token counts per call. Aggregate by agent to see which one is burning through your API budget.
+```typescript
+const span = trace.startSpan('llm-call');
+span.setAttributes({ model: 'gpt-4', tokens: 150 });
+span.end('ok');          // or span.endWithError(error)
+```
 
-### 🛡️ Audit agent decisions for compliance
-In regulated industries (finance, healthcare), you need a record of *why* an AI made a decision. `agent-watch` gives you the full decision tree with timestamps.
+### `tracer.instrument(client)`
 
-### 🔄 Catch infinite loops and retries
-Agent stuck in a retry loop calling the same tool 50 times? The span tree makes it immediately obvious — no more guessing from flat logs.
+```typescript
+const openai = tracer.instrument(new OpenAI());
+const anthropic = tracer.instrument(new Anthropic());
+// All calls are now automatically traced
+```
 
-### 🏗️ Onboard new team members
-New developer joins the team? Point them at the dashboard to understand how the agent actually works — what it calls, in what order, and what it expects back.
+</details>
 
 ---
 
 ## Self-hosted. Zero cloud. MIT.
 
-All data is stored locally in a SQLite file at `~/.agent-watch/traces.db` (or a custom path via `--db`).  
-No API keys. No accounts. No data leaves your machine.
+All data stays in a local SQLite file. No accounts. No API keys. No data leaves your machine.
 
 ```
 MIT License — Copyright (c) 2026 Raul Rosello
